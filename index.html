@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Temtudo - Premier NFT Marketplace. Collect rare digital assets.">
+    <title>Temtudo | NFT Marketplace</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header class="header">
+        <div class="container header-container">
+            <a href="#" class="logo">&lt;Temtudo.NFT/&gt;</a>
+            
+            <nav class="nav">
+                <ul class="nav-list">
+                    <li><a href="#hero">Drops</a></li>
+                    <li><a href="#products">Marketplace</a></li>
+                    <li><a href="#benefits">Creators</a></li>
+                    <li><button id="connect-wallet" class="nav-btn">Connect Wallet</button></li>
+                </ul>
+            </nav>
+
+            <div class="hamburger"><i class="fas fa-bars"></i></div>
+        </div>
+    </header>
+
+    <section id="hero" class="hero">
+        <div class="container hero-content">
+            <h1 class="hidden-element">Collect Digital <span class="highlight">Eternity</span>.</h1>
+            <p class="hidden-element delay-1">Discover, collect, and sell extraordinary NFTs. The world's first matrix-based digital marketplace.</p>
+            <div class="hero-btns hidden-element delay-2">
+                <a href="#products" class="btn btn-primary">Explore Collection</a>
+                <a href="#benefits" class="btn btn-outline">Create NFT</a>
+            </div>
+        </div>
+        <div class="hero-bg-overlay"></div>
+    </section>
+
+    <section id="benefits" class="section benefits">
+        <div class="container">
+            <h2 class="section-title hidden-element">Market Features</h2>
+            <div class="benefits-grid">
+                <div class="card hidden-element">
+                    <i class="fas fa-gem card-icon"></i>
+                    <h3>Rare Items</h3>
+                    <p>Verified scarcity. Own unique digital assets on the blockchain.</p>
+                </div>
+                <div class="card hidden-element delay-1">
+                    <i class="fas fa-fingerprint card-icon"></i>
+                    <h3>Proof of Ownership</h3>
+                    <p>Smart contracts guarantee your rights and resale royalties.</p>
+                </div>
+                <div class="card hidden-element delay-2">
+                    <i class="fas fa-rocket card-icon"></i>
+                    <h3>Instant Launch</h3>
+                    <p>Mint directly to your wallet with low gas fees.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="products" class="section products">
+        <div class="container">
+            <h2 class="section-title">Live Mints <span style="font-size:0.5em; vertical-align:middle; color:#00ff41">●</span></h2>
+            
+            <div id="product-container" class="products-grid hidden-element"></div>
+
+            <div class="pagination-wrapper hidden-element">
+                <button id="btn-prev" class="page-control"><i class="fas fa-chevron-left"></i></button>
+                <div id="pagination-numbers" class="pagination-numbers"></div>
+                <button id="btn-next" class="page-control"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            
+            <p class="results-info" id="page-info">Syncing Blockchain...</p>
+        </div>
+    </section>
+
+    <section id="cta-final" class="section cta-final">
+        <div class="container cta-content hidden-element">
+            <h2>Join the Metaverse.</h2>
+            <p>Start your collection today.</p>
+            <a href="#products" class="btn btn-primary btn-large">View Drops</a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-logo">
+                <a href="#">&lt;Temtudo.NFT/&gt;</a>
+                <p>Digital Art & Collectibles.</p>
+            </div>
+            <div class="footer-links">
+                <h3>Chains</h3>
+                <ul>
+                    <li><a href="#">Ethereum</a></li>
+                    <li><a href="#">Solana</a></li>
+                    <li><a href="#">Polygon</a></li>
+                </ul>
+            </div>
+            <div class="footer-social">
+                <a href="#"><i class="fab fa-twitter"></i></a>
+                <a href="#"><i class="fab fa-discord"></i></a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Temtudo.NFT. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div id="product-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            
+            <div class="modal-grid">
+                <div class="modal-img-container">
+                    <img id="modal-img" src="" alt="NFT Preview">
+                </div>
+                
+                <div class="modal-info">
+                    <div class="modal-header">
+                        <span id="modal-rarity" class="rarity-badge">Legendary</span>
+                        <h2 id="modal-title">NFT Name</h2>
+                    </div>
+                    
+                    <p id="modal-desc" class="modal-desc">Description goes here...</p>
+                    
+                    <div class="modal-meta">
+                        <div class="meta-item">
+                            <span>Creator</span>
+                            <p>Temtudo Labs</p>
+                        </div>
+                        <div class="meta-item">
+                            <span>Blockchain</span>
+                            <p>Ethereum</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-action">
+                        <div class="price-display">
+                            <span>Current Price</span>
+                            <h3 id="modal-price">0.00 ETH</h3>
+                        </div>
+                        <button class="btn btn-primary btn-block">Mint Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
