@@ -1,12 +1,34 @@
 document.addEventListener('DOMContentLoaded', () => {
     
     // ==========================================
-    // 1. UI: MENU & ANIMATIONS
+    // 0. CONFIGURATION (SMART CONTRACT)
+    // ==========================================
+    
+    // ⚠️ IMPORTANT: Paste your Remix Contract Address here
+    // If you haven't deployed yet, you can leave it empty for UI testing, 
+    // but the "Mint" button will return an error.
+    const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE"; 
+    
+    // Minimal ABI (Interface to talk to the Solidity Contract)
+    const contractABI = [
+        "function mint() public payable",
+        "function totalSupply() public view returns (uint256)"
+    ];
+
+    // Global Web3 Variables
+    let provider;
+    let signer;
+    let contract;
+
+
+    // ==========================================
+    // 1. UI: MOBILE MENU & SCROLL ANIMATIONS
     // ==========================================
     const hamburger = document.querySelector('.hamburger');
     const nav = document.querySelector('.nav');
     const navLinks = document.querySelectorAll('.nav-list li a');
 
+    // Toggle Menu
     hamburger.addEventListener('click', () => {
         nav.classList.toggle('active');
         const icon = hamburger.querySelector('i');
@@ -14,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.classList.toggle('fa-times');
     });
 
+    // Close menu when clicking a link
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
             nav.classList.remove('active');
@@ -22,34 +45,127 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Scroll Reveal Animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('show-element');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1 });
+    document.querySelectorAll('.hidden-element').forEach(el => observer.observe(el));
+
+
     // ==========================================
-    // 2. WEB3 CONNECTION
+    // 2. WEB3: CONNECTION LOGIC (METAMASK)
     // ==========================================
     const connectBtn = document.getElementById('connect-wallet');
-    connectBtn.addEventListener('click', async () => {
+
+    async function initWeb3() {
+        // Check if MetaMask is installed
         if (typeof window.ethereum !== 'undefined') {
             try {
-                connectBtn.innerText = "Connecting...";
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const accounts = await provider.send("eth_requestAccounts", []);
-                const account = accounts[0];
-                connectBtn.innerText = `${account.substring(0, 6)}...${account.substring(38)}`;
-                connectBtn.style.borderColor = "#00ff41";
+                // 1. Setup Provider (Ethers V6)
+                provider = new ethers.BrowserProvider(window.ethereum);
+                
+                // 2. Get Signer (The user's wallet)
+                signer = await provider.getSigner();
+                
+                // 3. Connect to the Contract
+                if (contractAddress && contractAddress !== "YOUR_CONTRACT_ADDRESS_HERE") {
+                    contract = new ethers.Contract(contractAddress, contractABI, signer);
+                }
+
+                // 4. Update UI Button
+                const address = await signer.getAddress();
+                const shortAddress = `${address.substring(0, 6)}...${address.substring(38)}`;
+                
+                connectBtn.innerText = shortAddress;
+                connectBtn.style.borderColor = "#00ff41"; // Matrix Green
                 connectBtn.style.background = "rgba(0, 255, 65, 0.1)";
+                
+                console.log("Web3 Connected. Address:", address);
+                return true;
+
             } catch (error) {
-                alert("Connection failed.");
-                connectBtn.innerText = "Connect Wallet";
+                console.error("Web3 Connection Error:", error);
+                alert("Connection failed. Please check your wallet.");
+                return false;
             }
         } else {
-            alert("MetaMask not found!");
+            alert("MetaMask not found! Please install the extension.");
+            window.open("https://metamask.io/download/", "_blank");
+            return false;
+        }
+    }
+
+    // Connect on button click
+    connectBtn.addEventListener('click', initWeb3);
+
+
+    // ==========================================
+    // 3. MINTING LOGIC (BUYING NFT)
+    // ==========================================
+    
+    // Select the button inside the Modal
+    const mintBtn = document.querySelector('.modal-action .btn-primary');
+    
+    mintBtn.addEventListener('click', async () => {
+        // Ensure we are connected
+        if (!contract) {
+            const connected = await initWeb3();
+            if(!connected || !contract) {
+                alert("Please connect your wallet and configure the Contract Address in script.js first.");
+                return;
+            }
+        }
+
+        try {
+            // 1. UI Feedback
+            mintBtn.innerText = "Processing...";
+            mintBtn.disabled = true;
+
+            // 2. Send Transaction
+            // Note: Value must match the requirement in Solidity (0.001 ETH)
+            const tx = await contract.mint({ 
+                value: ethers.parseEther("0.001") 
+            });
+
+            console.log("Transaction Hash:", tx.hash);
+            alert(`Transaction Sent!\nHash: ${tx.hash}\nWaiting for confirmation...`);
+
+            // 3. Wait for confirmation
+            await tx.wait();
+
+            // 4. Success UI
+            alert("SUCCESS! NFT Minted and sent to your wallet.");
+            mintBtn.innerText = "Minted Successfully";
+            mintBtn.style.background = "#fff";
+            mintBtn.style.color = "#000";
+
+        } catch (error) {
+            console.error("Mint Error:", error);
+            
+            // Check for user rejection
+            if (error.code === 'ACTION_REJECTED') {
+                alert("Transaction rejected by user.");
+            } else {
+                alert("Transaction failed. Check console for details.");
+            }
+
+            // Reset Button
+            mintBtn.innerText = "Mint Now";
+            mintBtn.disabled = false;
         }
     });
 
+
     // ==========================================
-    // 3. NFT MARKETPLACE LOGIC
+    // 4. MARKETPLACE LOGIC (DATA & PAGINATION)
     // ==========================================
     
-    // --- Data Configuration ---
+    // --- Configuration ---
     const totalItems = 36;
     const itemsPerPage = 6;
     let currentPage = 1;
@@ -70,10 +186,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModal = document.querySelector('.close-modal');
 
     // --- Mock Data Generators ---
-    const collections = ["CyberPunk", "Bored Ape", "EtherRock", "Azuki", "Doodles", "CloneX", "Moonbird", "CryptoPunks"];
+    const collections = ["CyberPunk", "Bored Ape", "EtherRock", "Azuki", "Doodles", "CloneX", "Moonbird"];
     const rarities = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
     
-    // NFT Images (Abstract/Digital Art)
     const nftImages = [
         "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&auto=format&fit=crop",
         "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=600&auto=format&fit=crop",
@@ -89,22 +204,20 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 1; i <= totalItems; i++) {
         const collection = getRandom(collections);
         const rarity = getRandom(rarities);
-        const price = (Math.random() * 2.5).toFixed(3);
+        // Price matches the smart contract for consistency
+        const price = "0.001 ETH"; 
         
         allProducts.push({
             id: i,
             name: `${collection} #${1000 + i}`,
-            price: `${price} ETH`,
+            price: price,
             img: getRandom(nftImages),
             rarity: rarity,
-            // Description "Lore"
             description: `This is a unique digital asset from the ${collection} collection. Minted on the Ethereum blockchain, item #${1000+i} features distinct traits and verified ownership history. Rarity Class: ${rarity}.`
         });
     }
 
-    // --- Functions ---
-
-    // 1. Open Modal Function
+    // --- Open Modal Function ---
     function openModal(product) {
         modalImg.src = product.img;
         modalTitle.innerText = product.name;
@@ -112,22 +225,29 @@ document.addEventListener('DOMContentLoaded', () => {
         modalPrice.innerText = product.price;
         modalRarity.innerText = product.rarity;
         
-        // Color code the rarity
+        // Rarity Colors
         if(product.rarity === 'Legendary') modalRarity.style.color = '#ffd700'; // Gold
         else if(product.rarity === 'Epic') modalRarity.style.color = '#a335ee'; // Purple
         else modalRarity.style.color = '#00ff41'; // Green
 
+        // Show Modal
         modal.classList.add('show');
+        
+        // Reset Mint Button state when opening new item
+        mintBtn.innerText = "Mint Now";
+        mintBtn.disabled = false;
+        mintBtn.style.background = "var(--primary-color)";
+        mintBtn.style.color = "#000";
     }
 
-    // 2. Close Modal Functions
+    // --- Close Modal Logic ---
     closeModal.addEventListener('click', () => modal.classList.remove('show'));
     
     window.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('show');
     });
 
-    // 3. Display Grid Items
+    // --- Display Grid Items ---
     function displayProducts(page) {
         gridContainer.innerHTML = "";
         const start = (page - 1) * itemsPerPage;
@@ -155,12 +275,12 @@ document.addEventListener('DOMContentLoaded', () => {
             gridContainer.appendChild(card);
         });
 
-        // Update Info
+        // Update Info Text
         const totalPages = Math.ceil(totalItems / itemsPerPage);
         pageInfo.innerText = `Page ${page} of ${totalPages}`;
     }
 
-    // 4. Pagination Setup
+    // --- Pagination Setup ---
     function setupPagination() {
         paginationNumbers.innerHTML = "";
         const pageCount = Math.ceil(totalItems / itemsPerPage);
@@ -178,14 +298,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 5. Update Interface Helper
+    // --- Update Interface Helper ---
     function updateInterface() {
         displayProducts(currentPage);
         
+        // Update Number Buttons
         const buttons = document.querySelectorAll('.page-btn');
         buttons.forEach(btn => btn.classList.remove('active'));
         if(buttons[currentPage - 1]) buttons[currentPage - 1].classList.add('active');
 
+        // Update Arrows
         const btnPrev = document.getElementById('btn-prev');
         const btnNext = document.getElementById('btn-next');
         
@@ -193,7 +315,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnNext.disabled = currentPage === Math.ceil(totalItems / itemsPerPage);
     }
 
-    // 6. Prev/Next Listeners
+    // --- Prev/Next Listeners ---
     document.getElementById('btn-prev').addEventListener('click', () => {
         if (currentPage > 1) { currentPage--; updateInterface(); }
     });
@@ -202,195 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentPage < Math.ceil(totalItems / itemsPerPage)) { currentPage++; updateInterface(); }
     });
 
-    // Init
+    // --- Initialization ---
     setupPagination();
     updateInterface();
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- CONFIGURAÇÃO WEB3 REAL ---
-    // Cole aqui o endereço do contrato que você criou no Remix
-    const contractAddress = "COLE_SEU_ENDEREÇO_DO_REMIX_AQUI"; 
-    
-    // ABI Mínima (Interface para o JS entender as funções do Solidity)
-    const contractABI = [
-        "function mint() public payable",
-        "function mintPrice() public view returns (uint256)"
-    ];
-
-    let provider;
-    let signer;
-    let contract;
-
-    // ==========================================
-    // 1. UI & MENU
-    // ==========================================
-    const hamburger = document.querySelector('.hamburger');
-    const nav = document.querySelector('.nav');
-    
-    hamburger.addEventListener('click', () => {
-        nav.classList.toggle('active');
-        hamburger.querySelector('i').classList.toggle('fa-bars');
-        hamburger.querySelector('i').classList.toggle('fa-times');
-    });
-
-    // ==========================================
-    // 2. CONEXÃO WEB3 & SMART CONTRACT
-    // ==========================================
-    const connectBtn = document.getElementById('connect-wallet');
-
-    async function initWeb3() {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                // Configura Ethers.js
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-                
-                // Conecta ao Contrato
-                contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-                // Atualiza Botão
-                const address = await signer.getAddress();
-                connectBtn.innerText = `${address.substring(0, 6)}...${address.substring(38)}`;
-                connectBtn.classList.add('connected');
-                
-                console.log("Web3 Inicializado. Contrato:", contractAddress);
-                return true;
-            } catch (error) {
-                console.error("Usuário negou conexão ou erro:", error);
-                return false;
-            }
-        } else {
-            alert("MetaMask não encontrada!");
-            return false;
-        }
-    }
-
-    connectBtn.addEventListener('click', initWeb3);
-
-    // ==========================================
-    // 3. LÓGICA DE COMPRA (MINTING)
-    // ==========================================
-    
-    // Botão dentro do Modal
-    const mintBtn = document.querySelector('.modal-action .btn-primary');
-    
-    mintBtn.addEventListener('click', async () => {
-        if (!contract) {
-            const connected = await initWeb3();
-            if(!connected) return;
-        }
-
-        try {
-            mintBtn.innerText = "Processing...";
-            mintBtn.disabled = true;
-
-            // PREÇO: No contrato definimos 0.001 ETH.
-            // Precisamos enviar esse valor na transação.
-            const tx = await contract.mint({ 
-                value: ethers.parseEther("0.001") 
-            });
-
-            console.log("Transação enviada:", tx.hash);
-            alert(`Transação Enviada! Hash: ${tx.hash}\nAguardando confirmação...`);
-
-            // Espera a confirmação do bloco
-            await tx.wait();
-
-            alert("SUCESSO! NFT Mintado e enviado para sua carteira.");
-            mintBtn.innerText = "Minted Successfully";
-            mintBtn.style.background = "#fff";
-            mintBtn.style.color = "#000";
-
-        } catch (error) {
-            console.error("Erro no Mint:", error);
-            alert("Erro na transação. Verifique o console (F12) ou seu saldo.");
-            mintBtn.innerText = "Mint Now";
-            mintBtn.disabled = false;
-        }
-    });
-
-    // ==========================================
-    // 4. DADOS E MODAL (VISUAL)
-    // ==========================================
-    // (Mantém a lógica visual de geração de cards e modal que já fizemos)
-    
-    const totalItems = 36;
-    const itemsPerPage = 6;
-    let currentPage = 1;
-    let allProducts = [];
-    const gridContainer = document.getElementById('product-container');
-    const paginationNumbers = document.getElementById('pagination-numbers');
-    
-    // Elementos do Modal
-    const modal = document.getElementById('product-modal');
-    const modalImg = document.getElementById('modal-img');
-    const modalTitle = document.getElementById('modal-title');
-    const modalDesc = document.getElementById('modal-desc');
-    const modalPrice = document.getElementById('modal-price');
-    const closeModal = document.querySelector('.close-modal');
-
-    // Dados Mockados
-    const nftImages = [
-        "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?w=600&auto=format&fit=crop"
-    ];
-
-    for (let i = 1; i <= totalItems; i++) {
-        allProducts.push({
-            id: i,
-            name: `Genesis NFT #${1000 + i}`,
-            price: `0.001 ETH`, // Deve bater com o contrato para não confundir o usuário
-            img: nftImages[i % nftImages.length],
-            desc: `Item exclusivo da coleção Genesis. Minting on-chain habilitado.`
-        });
-    }
-
-    function openModal(product) {
-        modalImg.src = product.img;
-        modalTitle.innerText = product.name;
-        modalDesc.innerText = product.desc;
-        modalPrice.innerText = product.price;
-        modal.classList.add('show');
-        
-        // Reseta o botão ao abrir novo modal
-        mintBtn.innerText = "Mint Now (0.001 ETH)";
-        mintBtn.disabled = false;
-        mintBtn.style.background = "var(--primary-color)";
-    }
-
-    closeModal.addEventListener('click', () => modal.classList.remove('show'));
-    window.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
-
-    function displayProducts(page) {
-        gridContainer.innerHTML = "";
-        const start = (page - 1) * itemsPerPage;
-        const items = allProducts.slice(start, start + itemsPerPage);
-
-        items.forEach(product => {
-            const card = document.createElement('article');
-            card.className = 'product-card';
-            card.innerHTML = `
-                <div class="img-wrapper"><img src="${product.img}"></div>
-                <div class="product-info">
-                    <h4>${product.name}</h4>
-                    <span class="price-tag">${product.price}</span>
-                </div>
-            `;
-            card.addEventListener('click', () => openModal(product));
-            gridContainer.appendChild(card);
-        });
-        
-        // Paginação simplificada para o exemplo
-        paginationNumbers.innerHTML = `Página ${page}`;
-    }
-    
-    // Inits
-    displayProducts(1);
-    
-    // Listeners Paginação
-    document.getElementById('btn-prev').addEventListener('click', () => { if(currentPage > 1) displayProducts(--currentPage); });
-    document.getElementById('btn-next').addEventListener('click', () => { if(currentPage < 6) displayProducts(++currentPage); });
 });
