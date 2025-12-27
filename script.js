@@ -331,8 +331,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initialization ---
     setupPagination();
     updateInterface();
-<<<<<<< HEAD
-});
-=======
-});
->>>>>>> 5873a6b2c187f888b64213915c9c06236ddfc02f
