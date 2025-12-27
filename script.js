@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ⚠️ IMPORTANT: Paste your Remix Contract Address here
     // If you haven't deployed yet, you can leave it empty for UI testing, 
     // but the "Mint" button will return an error.
-    const contractAddress = "YOUR_CONTRACT_ADDRESS_HERE"; 
+    const contractAddress = "0xd9145CCE52D386f254917e481eB44e9943F39138"; 
     
     // Minimal ABI (Interface to talk to the Solidity Contract)
     const contractABI = [
