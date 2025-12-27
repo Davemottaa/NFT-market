@@ -136,6 +136,7 @@ ul { list-style: none; }
 
 .cta-final { text-align: center; background: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1000&auto=format&fit=crop'); background-size: cover; background-attachment: fixed; }
 .cta-content h2 { font-size: 2.5rem; font-family: var(--font-heading); margin-bottom: 15px; }
+.cta-final p {padding: 10px;}
 
 .footer { background: #050505; padding: 60px 0 20px; border-top: 1px solid #222; }
 .footer-content { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 40px; margin-bottom: 40px; }
@@ -216,8 +217,61 @@ ul { list-style: none; }
     .modal-img-container { height: 250px; }
     .nav { position: fixed; top: 70px; right: -100%; width: 100%; height: calc(100vh - 70px); background: #0a0a0a; flex-direction: column; transition: 0.4s; border-top: 1px solid var(--primary-color); }
     .nav.active { right: 0; }
-    .nav-list { flex-direction: column; }
+    .nav-list { flex-direction: column; padding: 20px;}
     .hamburger { display: block; }
 }
 @media (max-width: 500px) { .products-grid { grid-template-columns: 1fr; } }
 
+/* --- LIVE & TRENDING STYLES --- */
+
+/* Bolinha piscando (Live Dot) */
+.live-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background-color: #00ff41;
+    border-radius: 50%;
+    margin-left: 10px;
+    box-shadow: 0 0 10px #00ff41;
+    animation: blink 2s infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Estilo Especial para Trending (Borda Dourada/Fogo) */
+.trending-card {
+    border: 1px solid #ffaa00 !important; /* Laranja/Ouro */
+    box-shadow: 0 0 15px rgba(255, 170, 0, 0.15) !important;
+}
+
+.trending-card .price-tag {
+    color: #ffaa00 !important;
+}
+
+.trending-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #ffaa00;
+    color: #000;
+    font-weight: bold;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 4px;
+    z-index: 2;
+    font-family: var(--font-heading);
+}
+
+/* Animação suave para novos itens entrando */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.new-item-anim {
+    animation: slideIn 0.6s ease forwards;
+}

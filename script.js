@@ -4,12 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // 0. CONFIGURATION (SMART CONTRACT)
     // ==========================================
     
-    // ⚠️ IMPORTANT: Paste your Remix Contract Address here
-    // If you haven't deployed yet, you can leave it empty for UI testing, 
-    // but the "Mint" button will return an error.
+    // 1. PASTE YOUR DEPLOYED CONTRACT ADDRESS HERE
     const contractAddress = "0xd9145CCE52D386f254917e481eB44e9943F39138"; 
     
-    // Minimal ABI (Interface to talk to the Solidity Contract)
+    // 2. ABI (Interface to communicate with Solidity)
     const contractABI = [
 	{
 		"inputs": [
@@ -675,7 +673,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // ==========================================
-    // 1. UI: MOBILE MENU & SCROLL ANIMATIONS
+    // 1. UI: MOBILE MENU & ANIMATIONS
     // ==========================================
     const hamburger = document.querySelector('.hamburger');
     const nav = document.querySelector('.nav');
@@ -698,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Scroll Reveal Animation
+    // Scroll Reveal Animation (Observer)
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -719,18 +717,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Check if MetaMask is installed
         if (typeof window.ethereum !== 'undefined') {
             try {
-                // 1. Setup Provider (Ethers V6)
+                // Setup Provider & Signer
                 provider = new ethers.BrowserProvider(window.ethereum);
-                
-                // 2. Get Signer (The user's wallet)
                 signer = await provider.getSigner();
                 
-                // 3. Connect to the Contract
+                // Initialize Contract Instance
                 if (contractAddress && contractAddress !== "YOUR_CONTRACT_ADDRESS_HERE") {
                     contract = new ethers.Contract(contractAddress, contractABI, signer);
                 }
 
-                // 4. Update UI Button
+                // Update UI Button with Wallet Address
                 const address = await signer.getAddress();
                 const shortAddress = `${address.substring(0, 6)}...${address.substring(38)}`;
                 
@@ -738,12 +734,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 connectBtn.style.borderColor = "#00ff41"; // Matrix Green
                 connectBtn.style.background = "rgba(0, 255, 65, 0.1)";
                 
-                console.log("Web3 Connected. Address:", address);
+                console.log("Web3 Connected. User:", address);
                 return true;
 
             } catch (error) {
-                console.error("Web3 Connection Error:", error);
-                alert("Connection failed. Please check your wallet.");
+                console.error("Connection Error:", error);
                 return false;
             }
         } else {
@@ -753,83 +748,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Connect on button click
     connectBtn.addEventListener('click', initWeb3);
 
 
     // ==========================================
-    // 3. MINTING LOGIC (BUYING NFT)
+    // 3. MODAL LOGIC (POPUP & MINTING)
     // ==========================================
     
-    // Select the button inside the Modal
-    const mintBtn = document.querySelector('.modal-action .btn-primary');
-    
-    mintBtn.addEventListener('click', async () => {
-        // Ensure we are connected
-        if (!contract) {
-            const connected = await initWeb3();
-            if(!connected || !contract) {
-                alert("Please connect your wallet and configure the Contract Address in script.js first.");
-                return;
-            }
-        }
-
-        try {
-            // 1. UI Feedback
-            mintBtn.innerText = "Processing...";
-            mintBtn.disabled = true;
-
-            // 2. Send Transaction
-            // Note: Value must match the requirement in Solidity (0.001 ETH)
-            const tx = await contract.mint({ 
-                value: ethers.parseEther("0.001") 
-            });
-
-            console.log("Transaction Hash:", tx.hash);
-            alert(`Transaction Sent!\nHash: ${tx.hash}\nWaiting for confirmation...`);
-
-            // 3. Wait for confirmation
-            await tx.wait();
-
-            // 4. Success UI
-            alert("SUCCESS! NFT Minted and sent to your wallet.");
-            mintBtn.innerText = "Minted Successfully";
-            mintBtn.style.background = "#fff";
-            mintBtn.style.color = "#000";
-
-        } catch (error) {
-            console.error("Mint Error:", error);
-            
-            // Check for user rejection
-            if (error.code === 'ACTION_REJECTED') {
-                alert("Transaction rejected by user.");
-            } else {
-                alert("Transaction failed. Check console for details.");
-            }
-
-            // Reset Button
-            mintBtn.innerText = "Mint Now";
-            mintBtn.disabled = false;
-        }
-    });
-
-
-    // ==========================================
-    // 4. MARKETPLACE LOGIC (DATA & PAGINATION)
-    // ==========================================
-    
-    // --- Configuration ---
-    const totalItems = 36;
-    const itemsPerPage = 6;
-    let currentPage = 1;
-    let allProducts = [];
-
-    // --- References ---
-    const gridContainer = document.getElementById('product-container');
-    const paginationNumbers = document.getElementById('pagination-numbers');
-    const pageInfo = document.getElementById('page-info');
-
-    // --- Modal References ---
+    // Modal Elements
     const modal = document.getElementById('product-modal');
     const modalImg = document.getElementById('modal-img');
     const modalTitle = document.getElementById('modal-title');
@@ -837,40 +763,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalPrice = document.getElementById('modal-price');
     const modalRarity = document.getElementById('modal-rarity');
     const closeModal = document.querySelector('.close-modal');
+    const mintBtn = document.querySelector('.modal-action .btn-primary');
 
-    // --- Mock Data Generators ---
-    const collections = ["CyberPunk", "Bored Ape", "EtherRock", "Azuki", "Doodles", "CloneX", "Moonbird"];
-    const rarities = ["Common", "Uncommon", "Rare", "Epic", "Legendary"];
-    
-    const nftImages = [
-        "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1614728853970-32a2656d7088?w=600&auto=format&fit=crop",
-        "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop"
-    ];
-
-    function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-    // Generate 36 Unique NFTs
-    for (let i = 1; i <= totalItems; i++) {
-        const collection = getRandom(collections);
-        const rarity = getRandom(rarities);
-        // Price matches the smart contract for consistency
-        const price = "0.001 ETH"; 
-        
-        allProducts.push({
-            id: i,
-            name: `${collection} #${1000 + i}`,
-            price: price,
-            img: getRandom(nftImages),
-            rarity: rarity,
-            description: `This is a unique digital asset from the ${collection} collection. Minted on the Ethereum blockchain, item #${1000+i} features distinct traits and verified ownership history. Rarity Class: ${rarity}.`
-        });
-    }
-
-    // --- Open Modal Function ---
+    // Function to Open Modal
     function openModal(product) {
         modalImg.src = product.img;
         modalTitle.innerText = product.name;
@@ -878,106 +773,194 @@ document.addEventListener('DOMContentLoaded', () => {
         modalPrice.innerText = product.price;
         modalRarity.innerText = product.rarity;
         
-        // Rarity Colors
-        if(product.rarity === 'Legendary') modalRarity.style.color = '#ffd700'; // Gold
+        // Dynamic Rarity Colors
+        if(product.rarity === 'Legendary') modalRarity.style.color = '#ffaa00'; // Gold
         else if(product.rarity === 'Epic') modalRarity.style.color = '#a335ee'; // Purple
         else modalRarity.style.color = '#00ff41'; // Green
 
-        // Show Modal
         modal.classList.add('show');
-        
-        // Reset Mint Button state when opening new item
+
+        // Reset Mint Button state
         mintBtn.innerText = "Mint Now";
         mintBtn.disabled = false;
         mintBtn.style.background = "var(--primary-color)";
         mintBtn.style.color = "#000";
     }
 
-    // --- Close Modal Logic ---
+    // Close Modal Events
     closeModal.addEventListener('click', () => modal.classList.remove('show'));
-    
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) modal.classList.remove('show');
+    window.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('show'); });
+
+    // Minting Logic (Inside Modal)
+    mintBtn.addEventListener('click', async () => {
+        // Ensure Web3 is ready
+        if (!contract) {
+            const connected = await initWeb3();
+            if(!connected || !contract) {
+                alert("Please connect wallet and configure contract address in script.js");
+                return;
+            }
+        }
+
+        try {
+            mintBtn.innerText = "Processing...";
+            mintBtn.disabled = true;
+
+            // Execute Transaction (0.001 ETH)
+            const tx = await contract.mint({ 
+                value: ethers.parseEther("0.001") 
+            });
+
+            console.log("Tx Sent:", tx.hash);
+            alert(`Transaction Sent!\nHash: ${tx.hash}\nWaiting for confirmation...`);
+
+            await tx.wait(); // Wait for Block Confirmation
+
+            alert("SUCCESS! NFT Minted.");
+            mintBtn.innerText = "Minted Successfully";
+            mintBtn.style.background = "#fff";
+
+        } catch (error) {
+            console.error("Mint Error:", error);
+            alert("Transaction failed or rejected.");
+            mintBtn.innerText = "Mint Now";
+            mintBtn.disabled = false;
+        }
     });
 
-    // --- Display Grid Items ---
-    function displayProducts(page) {
-        gridContainer.innerHTML = "";
-        const start = (page - 1) * itemsPerPage;
-        const end = start + itemsPerPage;
-        const pageItems = allProducts.slice(start, end);
 
-        pageItems.forEach(product => {
-            const card = document.createElement('article');
-            card.className = 'product-card';
+    // ==========================================
+    // 4. MARKETPLACE LOGIC (TRENDING + LIVE FEED)
+    // ==========================================
+    
+    // --- DOM Containers ---
+    const trendingContainer = document.getElementById('trending-container');
+    const liveContainer = document.getElementById('live-container');
+    const timerDisplay = document.getElementById('timer-display');
+
+    // --- Mock Data Generators ---
+    const collections = ["CyberPunk", "Bored Ape", "EtherRock", "Azuki", "Doodles", "CloneX"];
+    const nftImages = [
+        "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1634986666676-ec8fd927c23d?w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1642104704074-907c0698cbd9?w=600&auto=format&fit=crop",
+        "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop"
+    ];
+
+    function getRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+
+    // --- 1. RENDER TRENDING (Static High Value) ---
+    function initTrending() {
+        // Generate 3 static items
+        for (let i = 1; i <= 3; i++) {
+            const product = {
+                id: `trend-${i}`,
+                name: `Golden Ape #${i}99`,
+                price: `${(Math.random() * 10 + 5).toFixed(1)} ETH`, // High Price
+                img: nftImages[i % nftImages.length],
+                rarity: "Legendary",
+                description: "Top traded asset with verified volume on secondary market."
+            };
             
-            card.innerHTML = `
-                <div class="img-wrapper">
-                    <img src="${product.img}" alt="${product.name}" loading="lazy">
-                </div>
-                <div class="product-info">
-                    <span class="creator">Creator: Temtudo Labs</span>
-                    <h4>${product.name}</h4>
-                    <span class="price-tag">${product.price}</span>
-                </div>
-            `;
-            
-            // Add Click Event to Open Modal
-            card.addEventListener('click', () => openModal(product));
-
-            gridContainer.appendChild(card);
-        });
-
-        // Update Info Text
-        const totalPages = Math.ceil(totalItems / itemsPerPage);
-        pageInfo.innerText = `Page ${page} of ${totalPages}`;
-    }
-
-    // --- Pagination Setup ---
-    function setupPagination() {
-        paginationNumbers.innerHTML = "";
-        const pageCount = Math.ceil(totalItems / itemsPerPage);
-
-        for (let i = 1; i <= pageCount; i++) {
-            const btn = document.createElement('button');
-            btn.innerText = i;
-            btn.className = 'page-btn';
-            
-            btn.addEventListener('click', () => {
-                currentPage = i;
-                updateInterface();
-            });
-            paginationNumbers.appendChild(btn);
+            createCard(product, trendingContainer, true); // true = isTrending
         }
     }
 
-    // --- Update Interface Helper ---
-    function updateInterface() {
-        displayProducts(currentPage);
-        
-        // Update Number Buttons
-        const buttons = document.querySelectorAll('.page-btn');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        if(buttons[currentPage - 1]) buttons[currentPage - 1].classList.add('active');
 
-        // Update Arrows
-        const btnPrev = document.getElementById('btn-prev');
-        const btnNext = document.getElementById('btn-next');
-        
-        btnPrev.disabled = currentPage === 1;
-        btnNext.disabled = currentPage === Math.ceil(totalItems / itemsPerPage);
+    // --- 2. RENDER LIVE FEED (Dynamic) ---
+    let liveProducts = [];
+
+    function initLiveFeed() {
+        // Generate 6 initial items
+        for (let i = 1; i <= 6; i++) {
+            addNewLiveItem(false); // false = no initial animation
+        }
     }
 
-    // --- Prev/Next Listeners ---
-    document.getElementById('btn-prev').addEventListener('click', () => {
-        if (currentPage > 1) { currentPage--; updateInterface(); }
-    });
+    // Function to create ONE new item and push to top of array
+    function addNewLiveItem(animate = true) {
+        const id = Math.floor(Math.random() * 9000) + 1000;
+        const collection = getRandom(collections);
+        
+        const newProduct = {
+            id: `live-${Date.now()}`, // Unique ID based on timestamp
+            name: `${collection} #${id}`,
+            price: `${(Math.random() * 0.5).toFixed(3)} ETH`, // Normal Price
+            img: getRandom(nftImages),
+            rarity: Math.random() > 0.8 ? "Rare" : "Common",
+            description: "Just minted on the blockchain via Temtudo Contract."
+        };
 
-    document.getElementById('btn-next').addEventListener('click', () => {
-        if (currentPage < Math.ceil(totalItems / itemsPerPage)) { currentPage++; updateInterface(); }
-    });
+        // Add to the beginning of the array
+        liveProducts.unshift(newProduct);
+        
+        // Keep only 6 items to preserve layout
+        if (liveProducts.length > 6) liveProducts.pop();
 
-    // --- Initialization ---
-    setupPagination();
-    updateInterface();
+        // Render Grid
+        renderLiveGrid(animate);
+    }
+
+    // Render Logic
+    function renderLiveGrid(animate) {
+        liveContainer.innerHTML = ""; // Clear container
+        
+        liveProducts.forEach((product, index) => {
+            // Apply animation class if it's the first item and animation is enabled
+            const isNew = (index === 0 && animate);
+            createCard(product, liveContainer, false, isNew);
+        });
+    }
+
+
+    // --- 3. HELPER: CREATE CARD ---
+    function createCard(product, container, isTrending = false, isNew = false) {
+        const card = document.createElement('article');
+        
+        // Add specific classes for styling
+        card.className = `product-card ${isTrending ? 'trending-card' : ''} ${isNew ? 'new-item-anim' : ''}`;
+        
+        const badge = isTrending ? `<span class="trending-badge"><i class="fas fa-fire"></i> Hot</span>` : '';
+
+        card.innerHTML = `
+            ${badge}
+            <div class="img-wrapper">
+                <img src="${product.img}" alt="${product.name}">
+            </div>
+            <div class="product-info">
+                <span class="creator">Temtudo Labs</span>
+                <h4>${product.name}</h4>
+                <span class="price-tag">${product.price}</span>
+            </div>
+        `;
+        
+        // Click event to open details
+        card.addEventListener('click', () => openModal(product));
+        container.appendChild(card);
+    }
+
+
+    // --- 4. TIMER LOGIC (30 Seconds Loop) ---
+    let timeLeft = 30;
+    
+    setInterval(() => {
+        timeLeft--;
+        timerDisplay.innerText = `Updating in ${timeLeft}s`;
+        
+        if (timeLeft <= 0) {
+            addNewLiveItem(true); // Add new item WITH animation
+            timeLeft = 30; // Reset timer
+            
+            // Visual feedback on timer text
+            timerDisplay.style.color = "#00ff41";
+            setTimeout(() => timerDisplay.style.color = "#666", 1000);
+        }
+    }, 1000);
+
+
+    // --- INITIALIZATION ---
+    initTrending();
+    initLiveFeed();
 });
