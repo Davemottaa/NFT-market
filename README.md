@@ -32,7 +32,7 @@
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/temtudo-nft.git](https://github.com/YOUR_USERNAME/temtudo-nft.git)
+   git clone [https://github.com/Davemottaa/NFT-market](https://github.com/Davemottaa/NFT-market)
    cd temtudo-nft
 
 2. Run locally:
